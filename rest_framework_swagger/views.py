@@ -15,6 +15,9 @@ from rest_framework_swagger.docgenerator import DocumentationGenerator
 from rest_framework_swagger import SWAGGER_SETTINGS
 
 from rest_framework.settings import api_settings
+from django.shortcuts import redirect
+from django.core.urlresolvers import reverse
+
 
 try:
     JSONRenderer = list(filter(
@@ -27,7 +30,12 @@ except IndexError:
 
 class SwaggerUIView(View):
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, version=None, *args, **kwargs):
+
+        if version not in SWAGGER_SETTINGS.get('available_api_versions'):
+            return redirect(reverse('django.swagger.base.view', args=(SWAGGER_SETTINGS['default_api_version'],)))
+
+        SWAGGER_SETTINGS['api_version'] = version
 
         if not self.has_permission(request):
             return self.handle_permission_denied(request)
@@ -41,6 +49,8 @@ class SwaggerUIView(View):
                 'enabled_methods': mark_safe(
                     json.dumps(SWAGGER_SETTINGS.get('enabled_methods'))),
                 'doc_expansion': SWAGGER_SETTINGS.get('doc_expansion', ''),
+                'api_version': version,
+                'available_api_versions': SWAGGER_SETTINGS.get('available_api_versions', []),
             }
         }
         response = render_to_response(template_name, RequestContext(request, data))
@@ -71,7 +81,7 @@ class SwaggerResourcesView(APIDocView):
 
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request):
+    def get(self, request, version):
         apis = []
         resources = self.get_resources()
 
@@ -81,7 +91,7 @@ class SwaggerResourcesView(APIDocView):
             })
 
         return Response({
-            'apiVersion': SWAGGER_SETTINGS.get('api_version', ''),
+            'apiVersion': SWAGGER_SETTINGS.get('api_version', version),
             'swaggerVersion': '1.2',
             'basePath': self.host.rstrip('/'),
             'apis': apis,
@@ -107,12 +117,12 @@ class SwaggerApiView(APIDocView):
 
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, path):
+    def get(self, request, version, path):
         apis = self.get_api_for_resource(path)
         generator = DocumentationGenerator()
 
         return Response({
-            'apiVersion': SWAGGER_SETTINGS.get('api_version', ''),
+            'apiVersion': SWAGGER_SETTINGS.get('api_version', version),
             'swaggerVersion': '1.2',
             'basePath': self.api_full_uri.rstrip('/'),
             'resourcePath': '/' + path,
