@@ -30,12 +30,12 @@ except IndexError:
 
 class SwaggerUIView(View):
 
-    def get(self, request, version=None, *args, **kwargs):
+    def get(self, request, api_version=None, *args, **kwargs):
 
-        if version not in SWAGGER_SETTINGS.get('available_api_versions'):
+        if api_version not in SWAGGER_SETTINGS.get('available_api_versions'):
             return redirect(reverse('django.swagger.base.view', args=(SWAGGER_SETTINGS['default_api_version'],)))
 
-        SWAGGER_SETTINGS['api_version'] = version
+        SWAGGER_SETTINGS['api_version'] = api_version
 
         if not self.has_permission(request):
             return self.handle_permission_denied(request)
@@ -49,7 +49,7 @@ class SwaggerUIView(View):
                 'enabled_methods': mark_safe(
                     json.dumps(SWAGGER_SETTINGS.get('enabled_methods'))),
                 'doc_expansion': SWAGGER_SETTINGS.get('doc_expansion', ''),
-                'api_version': version,
+                'api_version': api_version,
                 'available_api_versions': SWAGGER_SETTINGS.get('available_api_versions', []),
             }
         }
@@ -81,7 +81,7 @@ class SwaggerResourcesView(APIDocView):
 
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, version):
+    def get(self, request, api_version):
         apis = []
         resources = self.get_resources()
 
@@ -91,7 +91,7 @@ class SwaggerResourcesView(APIDocView):
             })
 
         return Response({
-            'apiVersion': SWAGGER_SETTINGS.get('api_version', version),
+            'apiVersion': SWAGGER_SETTINGS.get('api_version', api_version),
             'swaggerVersion': '1.2',
             'basePath': self.host.rstrip('/'),
             'apis': apis,
@@ -117,12 +117,12 @@ class SwaggerApiView(APIDocView):
 
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, version, path):
+    def get(self, request, api_version, path):
         apis = self.get_api_for_resource(path)
         generator = DocumentationGenerator()
 
         return Response({
-            'apiVersion': SWAGGER_SETTINGS.get('api_version', version),
+            'apiVersion': SWAGGER_SETTINGS.get('api_version', api_version),
             'swaggerVersion': '1.2',
             'basePath': self.api_full_uri.rstrip('/'),
             'resourcePath': '/' + path,
