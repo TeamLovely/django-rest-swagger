@@ -10,6 +10,7 @@ Example:
     SWAGGER_SETTINGS = {
         'exclude_namespaces': [], 
         'api_version': '0.1',  
+        'available_api_versions': ['0.1', '0.1.1', '0.2', '1'],
         'api_path': '/',  
         'enabled_methods': [  
             'get',
@@ -43,7 +44,7 @@ Example:
 api_version
 ------------------------
 
-version of your api. 
+Default version of the API, this is used if no version is specified in the URL.
 
 Defaults to :code:`''`
 
@@ -59,6 +60,13 @@ api_key
 an api key
 
 Defaults to :code:`''`
+
+available_api_versions
+-----------------------
+
+An array of the versions supported by the documentation.
+
+Defaults to :code:`[]`
 
 doc_expansion
 -----------------------

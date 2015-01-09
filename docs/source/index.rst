@@ -13,6 +13,7 @@ Contents:
 
    settings
    yaml
+   versioning
    misc
    examples
 
