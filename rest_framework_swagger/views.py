@@ -32,7 +32,7 @@ class SwaggerUIView(View):
 
     def get(self, request, api_version=None, *args, **kwargs):
 
-        if api_version not in SWAGGER_SETTINGS.get('available_api_versions'):
+        if api_version not in SWAGGER_SETTINGS.get('available_api_versions') and SWAGGER_SETTINGS['api_version']:
             return redirect(reverse('django.swagger.base.view', args=(SWAGGER_SETTINGS['api_version'],)))
 
         SWAGGER_SETTINGS['api_version'] = api_version
