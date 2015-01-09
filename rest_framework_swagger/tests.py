@@ -1791,3 +1791,183 @@ def my_view_mocker(view):
 
 def my_view_mocker2(view):
     pass
+
+
+class MockVersionedApiView(APIView):
+    """
+    A Test View
+
+    This is more commenting
+    """
+    def get(self, request):
+        """
+        Get method specific comments
+        """
+        pass
+    pass
+
+
+class VersionedUrlParserTest(TestCase):
+    def setUp(self):
+        self.url_patterns = patterns(
+            '',
+            url(r'v2/a-view/?$', MockVersionedApiView.as_view(), name='a test view'),
+            url(r'v2/a-view/child/?$', MockVersionedApiView.as_view()),
+            url(r'v2/a-view/child2/?$', MockVersionedApiView.as_view()),
+            url(r'v2/another-view/?$', MockVersionedApiView.as_view(), name='another test view'),
+        )
+
+    def test_get_apis(self):
+        urlparser = UrlParser()
+        urls = import_module(settings.ROOT_URLCONF)
+        # Overwrite settings with test patterns
+        urls.urlpatterns = self.url_patterns
+        apis = urlparser.get_apis()
+
+        for api in apis:
+            self.assertIn(api['pattern'], self.url_patterns)
+
+    def test_flatten_url_tree(self):
+        urlparser = UrlParser()
+        apis = urlparser.get_apis(self.url_patterns)
+
+        self.assertEqual(len(self.url_patterns), len(apis))
+
+    def test_flatten_url_tree_url_import(self):
+        urls = patterns('', url(r'api/base/path/', include(self.url_patterns)))
+        urlparser = UrlParser()
+        apis = urlparser.get_apis(urls)
+
+        self.assertEqual(len(self.url_patterns), len(apis))
+
+    def test_resources_starting_with_letters_from_base_path(self):
+        base_path = r'api/'
+        url_patterns = patterns('',
+                                url(r'test', MockApiView.as_view(), name='a test view'),
+                                url(r'pai_test', MockApiView.as_view(), name='start with letters a, p, i'),
+                                )
+        urls = patterns('', url(base_path, include(url_patterns)))
+        urlparser = UrlParser()
+        apis = urlparser.get_apis(urls)
+        resources = urlparser.get_top_level_apis(apis)
+        self.assertEqual(set(resources), set([base_path + url_pattern.regex.pattern for url_pattern in url_patterns]))
+
+    def test_flatten_url_tree_with_filter(self):
+        urlparser = UrlParser()
+        apis = urlparser.get_apis(self.url_patterns, filter_path="a-view")
+
+        self.assertEqual(3, len(apis))
+
+    def test_filter_custom(self):
+        urlparser = UrlParser()
+        apis = [{'path': '/api/custom'}]
+        apis2 = urlparser.get_filtered_apis(apis, 'api/custom')
+        self.assertEqual(apis, apis2)
+
+    def test_flatten_url_tree_excluded_namesapce(self):
+        urls = patterns(
+            '',
+            url(r'api/base/path/', include(self.url_patterns, namespace='exclude'))
+        )
+        urlparser = UrlParser()
+        apis = urlparser.__flatten_patterns_tree__(patterns=urls, exclude_namespaces='exclude')
+
+        self.assertEqual([], apis)
+
+    def test_flatten_url_tree_url_import_with_routers(self):
+
+        class MockApiViewSet(ModelViewSet):
+            serializer_class = CommentSerializer
+            model = User
+
+        class AnotherMockApiViewSet(ModelViewSet):
+            serializer_class = CommentSerializer
+            model = User
+
+        router = DefaultRouter()
+        router.register(r'other_views', MockApiViewSet)
+        router.register(r'more_views', MockApiViewSet)
+
+        urls_app = patterns('', url(r'^', include(router.urls)))
+        urls = patterns(
+            '',
+            url(r'api/', include(urls_app)),
+            url(r'test/', include(urls_app))
+        )
+        urlparser = UrlParser()
+        apis = urlparser.get_apis(urls)
+
+        self.assertEqual(sum(api['path'].find('api') != -1 for api in apis), 4)
+        self.assertEqual(sum(api['path'].find('test') != -1 for api in apis), 4)
+
+    def test_get_api_callback(self):
+        urlparser = UrlParser()
+        callback = urlparser.__get_pattern_api_callback__(self.url_patterns[0])
+
+        self.assertTrue(issubclass(callback, MockApiView))
+
+    def test_get_api_callback_not_rest_view(self):
+        urlparser = UrlParser()
+        non_api = patterns(
+            '',
+            url(r'something', NonApiView.as_view())
+        )
+        callback = urlparser.__get_pattern_api_callback__(non_api)
+
+        self.assertIsNone(callback)
+
+    def test_get_top_level_api(self):
+        urlparser = UrlParser()
+        apis = urlparser.get_top_level_apis(urlparser.get_apis(self.url_patterns))
+
+        self.assertEqual(2, len(apis))
+
+    def test_assemble_endpoint_data(self):
+        """
+        Tests that the endpoint data is correctly packaged
+        """
+        urlparser = UrlParser()
+        pattern = self.url_patterns[0]
+
+        data = urlparser.__assemble_endpoint_data__(pattern)
+
+        self.assertEqual(data['path'], '/a-view/')
+        self.assertEqual(data['callback'], MockApiView)
+        self.assertEqual(data['pattern'], pattern)
+
+    def test_assemble_data_with_non_api_callback(self):
+        bad_pattern = patterns('', url(r'^some_view/', NonApiView.as_view()))
+
+        urlparser = UrlParser()
+        data = urlparser.__assemble_endpoint_data__(bad_pattern)
+
+        self.assertIsNone(data)
+
+    def test_exclude_router_api_root(self):
+        class MyViewSet(ModelViewSet):
+            serializer_class = CommentSerializer
+            model = User
+
+        router = DefaultRouter()
+        router.register('test', MyViewSet)
+
+        urls_created = len(router.urls)
+
+        parser = UrlParser()
+        apis = parser.get_apis(router.urls)
+
+        self.assertEqual(4, urls_created - len(apis))
+
+    def test_get_base_path_for_common_endpoints(self):
+        parser = UrlParser()
+        paths = ['api/endpoint1', 'api/endpoint2']
+        base_path = parser.__get_base_path__(paths)
+
+        self.assertEqual('api/', base_path)
+
+    def test_get_base_path_for_root_level_endpoints(self):
+        parser = UrlParser()
+        paths = ['endpoint1', 'endpoint2', 'endpoint3']
+        base_path = parser.__get_base_path__(paths)
+
+        self.assertEqual('', base_path)
