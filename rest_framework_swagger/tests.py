@@ -1843,8 +1843,8 @@ class VersionedUrlParserTest(TestCase):
     def test_resources_starting_with_letters_from_base_path(self):
         base_path = r'api/'
         url_patterns = patterns('',
-                                url(r'test', MockApiView.as_view(), name='a test view'),
-                                url(r'pai_test', MockApiView.as_view(), name='start with letters a, p, i'),
+                                url(r'test', MockVersionedApiView.as_view(), name='a test view'),
+                                url(r'pai_test', MockVersionedApiView.as_view(), name='start with letters a, p, i'),
                                 )
         urls = patterns('', url(base_path, include(url_patterns)))
         urlparser = UrlParser()
@@ -1904,7 +1904,7 @@ class VersionedUrlParserTest(TestCase):
         urlparser = UrlParser()
         callback = urlparser.__get_pattern_api_callback__(self.url_patterns[0])
 
-        self.assertTrue(issubclass(callback, MockApiView))
+        self.assertTrue(issubclass(callback, MockVersionedApiView))
 
     def test_get_api_callback_not_rest_view(self):
         urlparser = UrlParser()
@@ -1931,8 +1931,8 @@ class VersionedUrlParserTest(TestCase):
 
         data = urlparser.__assemble_endpoint_data__(pattern)
 
-        self.assertEqual(data['path'], '/a-view/')
-        self.assertEqual(data['callback'], MockApiView)
+        self.assertEqual(data['path'], '/v2/a-view/')
+        self.assertEqual(data['callback'], MockVersionedApiView)
         self.assertEqual(data['pattern'], pattern)
 
     def test_assemble_data_with_non_api_callback(self):
