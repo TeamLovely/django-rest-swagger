@@ -3,6 +3,7 @@ VERSION = '0.2.7'
 DEFAULT_SWAGGER_SETTINGS = {
     'exclude_namespaces': [],
     'api_version': '',
+    'available_api_versions': [],
     'api_path': '/',
     'api_key': '',
     'token_type': 'Token',
