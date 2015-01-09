@@ -81,7 +81,7 @@ class SwaggerResourcesView(APIDocView):
 
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, api_version):
+    def get(self, request, api_version=None):
         apis = []
         resources = self.get_resources()
 
@@ -117,7 +117,7 @@ class SwaggerApiView(APIDocView):
 
     renderer_classes = (JSONRenderer,)
 
-    def get(self, request, api_version, path):
+    def get(self, request, path, api_version=None):
         apis = self.get_api_for_resource(path)
         generator = DocumentationGenerator()
 
