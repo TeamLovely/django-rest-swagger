@@ -18,7 +18,6 @@ from rest_framework_swagger.docgenerator import DocumentationGenerator
 
 from rest_framework_swagger import SWAGGER_SETTINGS
 
-from rest_framework.settings import api_settings
 from django.shortcuts import redirect
 from django.core.urlresolvers import reverse
 
