@@ -65,6 +65,7 @@ class SwaggerUIView(View):
                 'doc_expansion': SWAGGER_SETTINGS.get('doc_expansion', ''),
                 'api_version': api_version,
                 'available_api_versions': SWAGGER_SETTINGS.get('available_api_versions', []),
+                'default_api_version': SWAGGER_SETTINGS.get('default_api_version'),
             }
         }
         response = render_to_response(template_name, RequestContext(request, data))
