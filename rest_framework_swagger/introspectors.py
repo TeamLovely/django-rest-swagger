@@ -116,7 +116,7 @@ class BaseViewIntrospector(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, callback, path, pattern):
-        self.callback = callback
+        self.callback = type(callback())  # Instantiate to get the real class
         self.path = path
         self.pattern = pattern
 
